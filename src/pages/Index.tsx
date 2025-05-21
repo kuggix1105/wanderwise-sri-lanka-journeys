@@ -11,14 +11,14 @@ import { Download, RefreshCw } from 'lucide-react';
 import { ItineraryItem } from '@/components/ItineraryCard';
 import { WanderWiseLogo } from '@/components/WanderWiselogo';
 
-// Mock data for locations in Sri Lanka
+// Enhanced mock data for locations in Sri Lanka with day information
 const sriLankaLocations = [
-  { name: 'Colombo', lat: 6.9271, lng: 79.8612 },
-  { name: 'Kandy', lat: 7.2906, lng: 80.6337 },
-  { name: 'Ella', lat: 6.8667, lng: 81.0467 },
-  { name: 'Galle', lat: 6.0535, lng: 80.2210 },
-  { name: 'Sigiriya', lat: 7.9570, lng: 80.7603 },
-  { name: 'Trincomalee', lat: 8.5874, lng: 81.2152 }
+  { name: 'Colombo', lat: 6.9271, lng: 79.8612, day: 1 },
+  { name: 'Kandy', lat: 7.2906, lng: 80.6337, day: 2 },
+  { name: 'Sigiriya', lat: 7.9570, lng: 80.7603, day: 3 },
+  { name: 'Ella', lat: 6.8667, lng: 81.0467, day: 4 },
+  { name: 'Yala', lat: 6.2719, lng: 81.3486, day: 5 },
+  { name: 'Galle', lat: 6.0535, lng: 80.2210, day: 6 }
 ];
 
 // Mock itinerary items
@@ -81,7 +81,7 @@ const mockItinerary: ItineraryItem[] = [
 
 const Index = () => {
   const [itinerary, setItinerary] = useState<ItineraryItem[]>(mockItinerary);
-  const [activeLocations, setActiveLocations] = useState(sriLankaLocations.slice(0, 3));
+  const [activeLocations, setActiveLocations] = useState(sriLankaLocations);
   const [filters, setFilters] = useState({});
   const [userPreferences, setUserPreferences] = useState<string[]>([]);
   
@@ -97,9 +97,15 @@ const Index = () => {
     // Update the itinerary based on the user's input
     // This is a simplified mock - in a real app, you'd make API calls to your AI service
     const shuffled = [...mockItinerary].sort(() => 0.5 - Math.random());
+    
+    // Create new locations with sequential days
     const selectedLocations = sriLankaLocations
       .sort(() => 0.5 - Math.random())
-      .slice(0, Math.floor(Math.random() * 3) + 3);
+      .slice(0, Math.floor(Math.random() * 3) + 4)
+      .map((loc, index) => ({
+        ...loc,
+        day: index + 1
+      }));
       
     // Introduce a delay to simulate processing
     setTimeout(() => {
@@ -118,15 +124,20 @@ const Index = () => {
     // Simulate regenerating a new itinerary
     const shuffled = [...mockItinerary]
       .sort(() => 0.5 - Math.random())
-      .map(item => ({
+      .map((item, index) => ({
         ...item,
-        day: Math.floor(Math.random() * 7) + 1
-      }))
-      .sort((a, b) => a.day - b.day);
+        day: index + 1
+      }));
       
+    // Ensure locations match with itinerary days
     const selectedLocations = sriLankaLocations
       .sort(() => 0.5 - Math.random())
-      .slice(0, Math.floor(Math.random() * 3) + 3);
+      .slice(0, shuffled.length)
+      .map((loc, index) => ({
+        ...loc,
+        day: index + 1,
+        name: shuffled[index].location // Match location names with itinerary
+      }));
       
     setItinerary(shuffled);
     setActiveLocations(selectedLocations);
