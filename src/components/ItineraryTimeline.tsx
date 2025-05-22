@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ItineraryItem, ItineraryCard } from './ItineraryCard';
+import { MapPin } from 'lucide-react';
 
 interface ItineraryTimelineProps {
   items: ItineraryItem[];
@@ -22,7 +23,10 @@ export const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ items }) =
               <div className="w-8 h-8 rounded-full bg-travel-sunset text-white flex items-center justify-center font-bold">
                 {item.day}
               </div>
-              <span className="text-xs mt-1">{item.location}</span>
+              <div className="flex items-center mt-1 text-xs">
+                <MapPin className="h-3 w-3 mr-1 text-travel-sunset" />
+                <span>{item.location}</span>
+              </div>
             </div>
             {index < sortedItems.length - 1 && (
               <div className="h-0.5 bg-travel-sunset/30 w-full flex-1 mx-1 md:mx-2 lg:mx-4" />

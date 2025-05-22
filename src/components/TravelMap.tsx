@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { ZoomIn, ZoomOut, Route, MapPin } from 'lucide-react';
+import { ZoomIn, ZoomOut, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 
 interface Location {
   name: string;
@@ -16,26 +17,72 @@ interface TravelMapProps {
   locations: Location[];
 }
 
+// Sri Lanka's map center coordinates
+const SRI_LANKA_CENTER = {
+  lat: 7.8731,
+  lng: 80.7718
+};
+
+// Map container style
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%'
+};
+
+// Map options
+const mapOptions = {
+  disableDefaultUI: true,
+  zoomControl: false,
+  mapTypeControl: false,
+  streetViewControl: false,
+  clickableIcons: false,
+  mapTypeId: 'terrain'
+};
+
 export const TravelMap: React.FC<TravelMapProps> = ({ locations }) => {
-  const [zoomLevel, setZoomLevel] = useState(100);
+  const [zoomLevel, setZoomLevel] = useState(7.5);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   
-  const handleZoomIn = () => {
-    if (zoomLevel < 150) {
-      setZoomLevel(prevZoom => prevZoom + 10);
-    }
-  };
-  
-  const handleZoomOut = () => {
-    if (zoomLevel > 70) {
-      setZoomLevel(prevZoom => prevZoom - 10);
-    }
-  };
-  
+  // Load the Google Maps API
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'AIzaSyBzDgCdNfCNXZnqwNZLjNaVrG88uzLyJGI' // Replace with your API key
+  });
+
   // Add day number to each location if not already provided
   const locationsWithDays = locations.map((loc, index) => ({
     ...loc,
     day: loc.day || index + 1
   }));
+
+  const handleZoomIn = () => {
+    if (zoomLevel < 12) {
+      setZoomLevel(prevZoom => prevZoom + 0.5);
+    }
+  };
+  
+  const handleZoomOut = () => {
+    if (zoomLevel > 6) {
+      setZoomLevel(prevZoom => prevZoom - 0.5);
+    }
+  };
+
+  // Generate polyline path from the locations
+  const pathCoordinates = locationsWithDays.map(loc => ({
+    lat: loc.lat,
+    lng: loc.lng
+  }));
+
+  const handleMapLoad = useCallback((map: google.maps.Map) => {
+    // Fit map bounds to contain all markers if there are locations
+    if (locationsWithDays.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      locationsWithDays.forEach(location => {
+        bounds.extend({ lat: location.lat, lng: location.lng });
+      });
+      map.fitBounds(bounds);
+    }
+  }, [locationsWithDays]);
 
   return (
     <ResizablePanelGroup direction="vertical" className="h-full">
@@ -62,119 +109,91 @@ export const TravelMap: React.FC<TravelMapProps> = ({ locations }) => {
           
           <div className="absolute top-4 left-4 z-20 bg-white/80 dark:bg-card/80 p-2 rounded-lg shadow-sm text-sm">
             <div className="flex items-center gap-1 mb-1">
-              <Route className="h-4 w-4 text-travel-sunset" />
+              <MapPin className="h-4 w-4 text-travel-sunset" />
               <span className="font-medium">Sri Lanka Travel Route</span>
             </div>
             <p className="text-xs text-muted-foreground">{locationsWithDays.length} destinations</p>
           </div>
           
-          <div className="absolute inset-0 flex items-center justify-center bg-travel-sky/5"
-               style={{ transform: `scale(${zoomLevel/100})`, transition: 'transform 0.3s ease-in-out' }}>
-            {/* Better Sri Lanka map with coordinates */}
-            <div className="relative w-full h-full">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg 
-                  viewBox="0 0 100 160" 
-                  className="w-3/4 h-auto text-travel-sky opacity-40"
-                  fill="currentColor"
-                >
-                  {/* More accurate Sri Lanka outline */}
-                  <path d="M50,20 C60,22 65,25 68,30 C71,35 73,40 75,45 C77,50 80,58 82,65 C84,72 85,80 84,88 C83,96 80,103 77,110 C74,117 70,123 65,128 C60,133 55,136 49,138 C43,140 37,139 32,136 C27,133 23,128 20,122 C17,116 15,108 15,100 C15,92 17,84 20,76 C23,68 28,60 33,52 C38,44 44,36 48,30 C50,27 47,22 50,20 Z" />
-                </svg>
-              </div>
-              
-              {/* Markers for locations */}
-              {locationsWithDays.map((loc, index) => {
-                // Convert the lat/lng to approximate positions on our SVG viewBox
-                // More accurate mapping for Sri Lanka's coordinates
-                const x = ((loc.lng - 79.5) / 2) * 100 + 50;
-                const y = ((8.5 - loc.lat) / 2) * 160 + 40;
-                
-                return (
-                  <div 
-                    key={index} 
-                    className="absolute w-6 h-6 bg-travel-sunset rounded-full shadow-md flex items-center justify-center text-white font-bold animate-pulse-slow"
-                    style={{ 
-                      left: `${x}%`, 
-                      top: `${y}%`,
-                      transform: 'translate(-50%, -50%)',
-                      zIndex: 10
-                    }}
-                  >
-                    {loc.day}
-                    <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-white/90 px-2 py-1 rounded text-xs shadow whitespace-nowrap text-black">
-                      {loc.name}
-                    </div>
-                    
-                    {/* Pulsing effect */}
-                    <div className="absolute inset-0 rounded-full bg-travel-sunset/50 animate-pulse-slow"></div>
-                  </div>
-                );
-              })}
-              
-              {/* Add lines between points to create a route with day labels */}
-              <svg 
-                className="absolute inset-0 h-full w-full" 
-                style={{ zIndex: 5 }}
-              >
-                {locationsWithDays.length > 1 && (
-                  <g>
-                    {locationsWithDays.map((loc, index) => {
-                      if (index === locationsWithDays.length - 1) return null;
-                      
-                      const start = {
-                        x: ((loc.lng - 79.5) / 2) * 100 + 50,
-                        y: ((8.5 - loc.lat) / 2) * 160 + 40
-                      };
-                      
-                      const end = {
-                        x: ((locationsWithDays[index + 1].lng - 79.5) / 2) * 100 + 50,
-                        y: ((8.5 - locationsWithDays[index + 1].lat) / 2) * 160 + 40
-                      };
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              center={SRI_LANKA_CENTER}
+              zoom={zoomLevel}
+              options={mapOptions}
+              onLoad={handleMapLoad}
+            >
+              {/* Polyline connecting locations */}
+              <Polyline
+                path={pathCoordinates}
+                options={{
+                  strokeColor: '#F97316',
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                  clickable: false,
+                  draggable: false,
+                  editable: false,
+                  visible: true,
+                  zIndex: 1,
+                  geodesic: true,
+                  icons: [{
+                    icon: {
+                      path: google.maps.SymbolPath.CIRCLE,
+                      fillColor: '#F97316',
+                      fillOpacity: 0.8,
+                      scale: 2,
+                      strokeColor: '#F97316',
+                      strokeWeight: 2,
+                    },
+                    offset: '0',
+                    repeat: '20px'
+                  }]
+                }}
+              />
 
-                      // Calculate midpoint for adding day label
-                      const midX = (start.x + end.x) / 2;
-                      const midY = (start.y + end.y) / 2;
-                      
-                      return (
-                        <g key={index}>
-                          <line 
-                            x1={`${start.x}%`} 
-                            y1={`${start.y}%`} 
-                            x2={`${end.x}%`} 
-                            y2={`${end.y}%`}
-                            stroke="#F97316"
-                            strokeWidth="3"
-                            strokeDasharray="5 3"
-                          />
-                          {/* Day transition label */}
-                          <circle 
-                            cx={`${midX}%`} 
-                            cy={`${midY}%`} 
-                            r="8" 
-                            fill="white" 
-                            stroke="#F97316" 
-                            strokeWidth="1"
-                          />
-                          <text 
-                            x={`${midX}%`} 
-                            y={`${midY}%`} 
-                            textAnchor="middle" 
-                            dominantBaseline="middle"
-                            fontSize="8"
-                            fontWeight="bold"
-                            fill="#F97316"
-                          >
-                            {loc.day} → {locationsWithDays[index + 1].day}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </g>
-                )}
-              </svg>
+              {/* Markers for locations */}
+              {locationsWithDays.map((location, index) => (
+                <Marker
+                  key={`marker-${index}`}
+                  position={{ lat: location.lat, lng: location.lng }}
+                  label={{ 
+                    text: location.day?.toString() || '', 
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                  }}
+                  icon={{
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: '#F97316',
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: '#FFFFFF',
+                    scale: 18,
+                  }}
+                  onClick={() => setSelectedLocation(location)}
+                  animation={google.maps.Animation.DROP}
+                  zIndex={100}
+                />
+              ))}
+
+              {/* Info window for selected location */}
+              {selectedLocation && (
+                <InfoWindow
+                  position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
+                  onCloseClick={() => setSelectedLocation(null)}
+                >
+                  <div className="p-1">
+                    <p className="font-medium text-sm">{selectedLocation.name}</p>
+                    <p className="text-xs text-muted-foreground">Day {selectedLocation.day}</p>
+                  </div>
+                </InfoWindow>
+              )}
+            </GoogleMap>
+          ) : (
+            <div className="h-full w-full flex items-center justify-center bg-muted">
+              <p>Loading map...</p>
             </div>
-          </div>
+          )}
         </Card>
       </ResizablePanel>
       
