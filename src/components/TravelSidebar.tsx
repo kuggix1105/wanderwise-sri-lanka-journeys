@@ -109,12 +109,22 @@ export const TravelSidebar: React.FC<TravelSidebarProps> = ({ onFilterChange }) 
               <CalendarDays className="w-4 h-4 mr-2 text-travel-sky" />
               <h3 className="font-medium">Travel Dates</h3>
             </div>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-            />
+            <div className="calendar-container max-w-full overflow-x-auto">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md border max-w-full"
+                classNames={{
+                  months: "flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0",
+                  month: "space-y-4 w-full min-w-[250px]",
+                  table: "w-full border-collapse space-y-1",
+                  row: "flex w-full mt-2",
+                  cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                  day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100"
+                }}
+              />
+            </div>
           </div>
         </div>
       </SidebarContent>

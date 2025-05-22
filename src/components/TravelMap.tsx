@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { ZoomIn, ZoomOut, Route } from 'lucide-react';
+import { ZoomIn, ZoomOut, Route, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Location {
@@ -70,24 +70,25 @@ export const TravelMap: React.FC<TravelMapProps> = ({ locations }) => {
           
           <div className="absolute inset-0 flex items-center justify-center bg-travel-sky/5"
                style={{ transform: `scale(${zoomLevel/100})`, transition: 'transform 0.3s ease-in-out' }}>
-            {/* Sri Lanka map with locations */}
+            {/* Better Sri Lanka map with coordinates */}
             <div className="relative w-full h-full">
               <div className="absolute inset-0 flex items-center justify-center">
                 <svg 
-                  viewBox="0 0 100 140" 
+                  viewBox="0 0 100 160" 
                   className="w-3/4 h-auto text-travel-sky opacity-40"
                   fill="currentColor"
                 >
-                  {/* More detailed Sri Lanka outline */}
-                  <path d="M53,20 C69,24 75,30 80,45 C85,60 90,80 85,95 C80,110 70,120 62,125 C54,130 45,132 38,125 C31,118 26,110 24,100 C22,90 18,75 20,60 C22,45 37,16 53,20 Z" />
+                  {/* More accurate Sri Lanka outline */}
+                  <path d="M50,20 C60,22 65,25 68,30 C71,35 73,40 75,45 C77,50 80,58 82,65 C84,72 85,80 84,88 C83,96 80,103 77,110 C74,117 70,123 65,128 C60,133 55,136 49,138 C43,140 37,139 32,136 C27,133 23,128 20,122 C17,116 15,108 15,100 C15,92 17,84 20,76 C23,68 28,60 33,52 C38,44 44,36 48,30 C50,27 47,22 50,20 Z" />
                 </svg>
               </div>
               
               {/* Markers for locations */}
               {locationsWithDays.map((loc, index) => {
                 // Convert the lat/lng to approximate positions on our SVG viewBox
-                const x = ((loc.lng - 79.5) / 2) * 100 + 50; // Roughly normalize to SVG coordinates
-                const y = ((7.9 - loc.lat) / 2) * 120 + 60;
+                // More accurate mapping for Sri Lanka's coordinates
+                const x = ((loc.lng - 79.5) / 2) * 100 + 50;
+                const y = ((8.5 - loc.lat) / 2) * 160 + 40;
                 
                 return (
                   <div 
@@ -123,12 +124,12 @@ export const TravelMap: React.FC<TravelMapProps> = ({ locations }) => {
                       
                       const start = {
                         x: ((loc.lng - 79.5) / 2) * 100 + 50,
-                        y: ((7.9 - loc.lat) / 2) * 120 + 60
+                        y: ((8.5 - loc.lat) / 2) * 160 + 40
                       };
                       
                       const end = {
                         x: ((locationsWithDays[index + 1].lng - 79.5) / 2) * 100 + 50,
-                        y: ((7.9 - locationsWithDays[index + 1].lat) / 2) * 120 + 60
+                        y: ((8.5 - locationsWithDays[index + 1].lat) / 2) * 160 + 40
                       };
 
                       // Calculate midpoint for adding day label
@@ -189,6 +190,12 @@ export const TravelMap: React.FC<TravelMapProps> = ({ locations }) => {
                   {location.day}
                 </div>
                 <span className="font-medium">{location.name}</span>
+                <div className="ml-auto text-xs text-muted-foreground">
+                  <span className="flex items-center">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    {location.lat.toFixed(2)}, {location.lng.toFixed(2)}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
